@@ -18,12 +18,8 @@ cut -d, -f1 anpr.csv --complement > anpr_without_numberplates.csv
 # 2. Sort by timestamp:
 head -1 anpr_without_numberplates.csv > anpr_sorted.csv && tail -n +2 anpr_without_numberplates.csv | sort -t, -k 3 >> anpr_sorted.csv
 # 3. Generate hourly and daily metrics per camera
-node index.js -a anpr_sorted.csv > anpr_summaries.ttl
-```
-
-The MINIMUM amount of vehicles can be configured with the environment variable `MINIMUM`. For example, when you only want to generate metrics that contain at least 10 observed vehicles, then you can run following command:
-```
-MINIMUM=10 node index.js -a anpr_sorted.csv > anpr_summaries.ttl
+# The min amount of vehicles can be configured. For example, when you only want to generate metrics that contain at least 10 observed vehicles.
+node index.js --minimum 10 -a anpr_sorted.csv > anpr_summaries.ttl
 ```
 
 ## Smart Flanders types: buckets om aggregaten te verzamelen
@@ -40,4 +36,6 @@ Methode:
 
 Iemand die door Kortrijk rijdt met een bepaalde snelheid
 
+### Ability to combine with other datasets
 
+To be researched... 

@@ -19,18 +19,22 @@ const writer = new N3.Writer(process.stdout,
 let processedCameras = {};
 let summaries = {};
 let dayBucketDate = null, hourBucketDate = null; // time bucket that is active
-let MINIMUM = process.env.MINIMUM || 0;
+let MINIMUM = 0;
 
 //// Program
 console.error(`This tool summarizes ANPR data into hourly and daily SSN observations. Use --help to discover more functions.`);
 
 program
   .option('-a, --anpr <anprfile>', 'path to ANPR file')
+  .option('-m, --minimum <minimum>', 'minimum amount of vehicles')
   .parse(process.argv);
 
 if (!program.anpr) {
   console.error('Please provide a path to the ANPR file');
   process.exit();
+}
+if (program.minimum) {
+  MINIMUM = program.minimum;
 }
 
 if (program.anpr) {
