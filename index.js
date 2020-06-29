@@ -7,6 +7,7 @@ const N3 = require('n3');
 const { DataFactory } = N3;
 const { namedNode, literal, defaultGraph, quad } = DataFactory;
 
+// RDF export
 const writer = new N3.Writer(process.stdout, 
 			     {end: false, 
 			      prefixes: { onderdeel: 'https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#',
@@ -15,6 +16,17 @@ const writer = new N3.Writer(process.stdout,
             				  sosa: "http://www.w3.org/ns/sosa/",
             				  locn: "http://www.w3.org/ns/locn#",
             				  geosparql: "http://www.opengis.net/ont/geosparql#" } });
+
+// CSV exports
+let header = '"cameraId", "timestamp", "count"';
+const perDayCsv = fs.createWriteStream(`anpr_summaries_perday.csv`);
+perDayCsv.write(header+"\n");
+const perHourCsv = fs.createWriteStream(`anpr_summaries_perhour.csv`);
+perHourCsv.write(header+"\n");
+
+header = '"cameraId", "latitude", "longitude", "streetname"';
+const cameraCsv = fs.createWriteStream(`anpr_cameras.csv`);
+cameraCsv.write(header+"\n");
 
 let processedCameras = {};
 let summaries = {};
@@ -39,6 +51,7 @@ if (program.minimum) {
 
 if (program.anpr) {
   let s = fs.createReadStream(program.anpr);
+
   papaparse.parse(s, {
     download: true,
     header: true,
@@ -76,6 +89,9 @@ function processCameraMetadata(row) {
     // only once for camera metadata
     let cameraURI = 'http://example.org/cameras/' + cameraId;
     let geometryURI = cameraURI + '/geometry';
+
+    let csvRow = `"${cameraId}","${row.data.Latitude}","${row.data.Longitude}","${row.data.Name}"`;
+    cameraCsv.write(csvRow+"\n");
 
     writer.addQuad(
       namedNode(cameraURI),
@@ -157,11 +173,17 @@ function processObservation(cameraId, timestamp) {
 }
 
 function publish(cameraId, timestamp, property, count) {
-  let observedProperty = "http://example.org/passedByCarsPerHour";
-  if (property === "perDay") observedProperty = "http://example.org/passedByCarsPerDay";
-
   let dateString = new Date(timestamp).toISOString();
   let observation = 'http://example.org/observation/' + cameraId + '/' + property + '/' + dateString;
+  let csvRow = `${cameraId},${dateString},${count}`;
+
+  let observedProperty = "http://example.org/passedByCarsPerHour";
+  if (property === "perDay") {
+    observedProperty = "http://example.org/passedByCarsPerDay";
+    perDayCsv.write(csvRow+"\n");
+  } else {
+    perHourCsv.write(csvRow+"\n");
+  }
 
   writer.addQuad(
     namedNode(observation),

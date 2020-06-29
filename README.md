@@ -22,6 +22,8 @@ head -1 anpr_without_numberplates.csv > anpr_sorted.csv && tail -n +2 anpr_witho
 node index.js --minimum 10 -a anpr_sorted.csv > anpr_summaries.ttl
 ```
 
+Next to this Linked Data export (`anpr_summaries.ttl`), CSV exports (`anpr_cameras.csv`, `anpr_summaries_perday.csv` and `anpr_summaries_perhour.csv`) are also created for easier data analysis.
+
 ## Smart Flanders types: buckets om aggregaten te verzamelen
 
 ### Periodieke bezoeker
