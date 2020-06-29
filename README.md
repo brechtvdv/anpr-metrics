@@ -2,9 +2,10 @@
 
 ANPR Metrics is an open source Command Line Interface (CLI) and dashboard for ingesting and analysing raw ANPR data. It is capable of reading raw ANPR data and aggregating useful & privacy-protecting metrics for longterm storage and analysis. Raw data is not persisted after aggregation.
 
-The CLI expects ANPR data that looks like below:
+The CLI expects ANPR data in CSV format that looks like below:
 
 Plate | Latitude | Longitude | TimeStamp | DeviceId | Name
+------------ | -------------  | -------------  | -------------  | -------------  | -------------
 XXX | 50.00 | 3.00 | 2020-01-01 10:00:00.000| 1 | My street name
 
 ## Camera metrics
