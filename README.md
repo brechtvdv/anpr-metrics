@@ -42,6 +42,8 @@ A CSV and Linked Data datadump (Turtle) will be generated together with a HTML r
 node index.js --anpr anpr_sorted.csv
 ```
 
+![HTML report](https://gitlab.ilabt.imec.be/brvdvyve/anpr_metrics/-/raw/master/resources/gif.gif "Overview of the report.")
+
 
 ### Flags
 
