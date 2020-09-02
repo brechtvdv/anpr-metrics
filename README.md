@@ -42,9 +42,6 @@ A CSV and Linked Data datadump (Turtle) will be generated together with a HTML r
 node index.js --anpr anpr_sorted.csv
 ```
 
-![HTML report](https://gitlab.ilabt.imec.be/brvdvyve/anpr_metrics/-/raw/master/resources/gif.gif "Overview of the report.")
-
-
 ### Flags
 
 The following flags are required to run anpr-metrics.
@@ -61,3 +58,7 @@ The following flags are required to run anpr-metrics.
 	- Only process ANPR observations that happen after this start date. (e.g. 2020-01-01)
 - `--endDate`
 	- Only process ANPR observation that happen before this end date (e.g. 2020-04-01)
+
+## Report
+
+![HTML report](https://gitlab.ilabt.imec.be/brvdvyve/anpr_metrics/-/raw/master/resources/gif.gif "Overview of the report.")
