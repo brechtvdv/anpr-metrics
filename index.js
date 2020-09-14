@@ -52,7 +52,10 @@ if (program.minimum) {
 }
 
 if (program.anpr) {
-  createCameraMetadata();
+  //createCameraMetadata();
+  createUniqueAndTransitObservations();
+  //calculateAverageTimeBetweenCameraPairs();
+
 }
 if (program.startDate) {
   START = new Date(program.startDate);
@@ -75,12 +78,6 @@ let DESTINATION = 'anpr_summaries_'
 let anpr_summaries_destination = fs.createWriteStream(path.join(__dirname, "./" + DESTINATION));
 
 const writer = new N3.Writer(anpr_summaries_destination);
-
-/*writer._write = (quad, encoding, done) => {
-    //data_ttl += quad.replace("\n", "");
-    anpr_summaries_destination.write(quad);
-    //setTimeout(done, 1000);
-};*/
 
 for (let p in prefixes) {
     writer.addPrefix(p, prefixes[p]);
@@ -466,7 +463,8 @@ function createTravelFlows() {
   // Object so we can calculate the average time between camera pairs for every hour bucket
   let time = {}; // cameraId -> cameraId -> hour bucket -> time (every hour has its own average time)
 
-  let amountOfTravelFlowsPerHour = {}; // cameraId -> cameraId -> hour -> count
+  let amountOfTravelFlowsPerHour = {}; // cameraId -> cameraId -> hour -> count | count of flows in that hour bucket
+  let amountOfTravelFlowsPerMinute = {}; // cameraId -> cameraId -> numberOfMinutes -> count | count of flows that needed so many minutes to go from origin to destination
 
   let s = fs.createReadStream(program.anpr);
   // First we need to calculate the average time it takes between every camera pair, on working days 
@@ -487,23 +485,29 @@ function createTravelFlows() {
         numberPlatePreviously[plate].when = timestamp;
       } else {
         // This number plate has already been noticed
-        // Round to the same hour bucket
-        let roundedDate = new Date(timestamp);
-
-        //// Round to hourly, e.g. 2020-06-10T03:00:00.000Z
-        roundedDate.setMinutes(0);
-        roundedDate.setSeconds(0);
-        roundedDate.setMilliseconds(0);
         // Time in ms it took to get to the next camera
         let took = timestamp.getTime() - numberPlatePreviously[plate].when.getTime();
         // When this took less than 15 minutes more than the average time between these cameras, it's a travel flow
         let avg = averageTimeBetweenCameraPairs[numberPlatePreviously[plate].where][cameraId];
         let max = avg + 15*60*1000;
         if (took < max) {
+          // Round to the same hour bucket
+          let roundedDate = new Date(timestamp);
+          //// Round to hourly, e.g. 2020-06-10T03:00:00.000Z
+          roundedDate.setMinutes(0);
+          roundedDate.setSeconds(0);
+          roundedDate.setMilliseconds(0);
+
           if (!amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where]) amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where] = {};
           if (!amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where][cameraId]) amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where][cameraId] = {};
           if (!amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where][cameraId][roundedDate]) amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where][cameraId][roundedDate] = 1;
           else amountOfTravelFlowsPerHour[numberPlatePreviously[plate].where][cameraId][roundedDate]++;
+
+          let minutesItTook = Math.round(took / 1000 / 60);
+          if (!amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where]) amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where] = {};
+          if (!amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where][cameraId]) amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where][cameraId] = {};
+          if (!amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where][cameraId][minutesItTook]) amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where][cameraId][minutesItTook] = 1;
+          else amountOfTravelFlowsPerMinute[numberPlatePreviously[plate].where][cameraId][minutesItTook]++;
         }
         // Overwrite previous detection
         numberPlatePreviously[plate].where = cameraId;
@@ -511,13 +515,13 @@ function createTravelFlows() {
       }     
     },
     complete: function() {
-      // Output travel flows
+      // Output hour buckets of travel flows
       for (let origin in amountOfTravelFlowsPerHour) {
         for (let destination in amountOfTravelFlowsPerHour[origin]) {
           for (let timestamp in amountOfTravelFlowsPerHour[origin][destination]) {
             if (amountOfTravelFlowsPerHour[origin][destination][timestamp] > MINIMUM) {
-              let observedProperty = 'http://example.org/passedByVehiclesInFlow';
-              let property = 'passedByVehiclesInFlow';
+              let observedProperty = 'http://example.org/passedByVehiclesInFlowCount';
+              let property = 'passedByVehiclesInFlowCount';
               let timestampFormatted = formatDate(new Date(timestamp))
               let observation = 'http://example.org/observation/' + property + '/' + origin + '/' + destination + '?timestamp=' + timestampFormatted;
 
@@ -596,7 +600,97 @@ function createTravelFlows() {
           }
         }
       }
-      writer.end((error, result) => updateReportTemplate());
+
+      // Output minute buckets of travel flows
+      for (let origin in amountOfTravelFlowsPerMinute) {
+        for (let destination in amountOfTravelFlowsPerMinute[origin]) {
+          for (let minutesItTook in amountOfTravelFlowsPerMinute[origin][destination]) {
+            if (amountOfTravelFlowsPerMinute[origin][destination][minutesItTook] > MINIMUM) {
+              let observedProperty = 'http://example.org/passedByVehiclesPerMinuteInFlowCount';
+              let property = 'passedByVehiclesPerMinuteInFlowCount';
+              let observation = 'http://example.org/observation/' + property + '/' + origin + '/' + destination + '/' + minutesItTook;
+
+              writer.addQuad(
+                namedNode(observation),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://www.w3.org/ns/sosa/Observation')
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://www.w3.org/ns/sosa/hasFeatureOfInterest'),
+                  namedNode('http://example.org/cameras/' + origin)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://www.w3.org/ns/sosa/hasFeatureOfInterest'),
+                  namedNode('http://example.org/cameras/' + destination)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://example.org/originCamera'),
+                  namedNode('http://example.org/cameras/' + origin)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://example.org/destinationCamera'),
+                  namedNode('http://example.org/cameras/' + destination)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://www.w3.org/ns/sosa/observedProperty'),
+                  namedNode(observedProperty)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://example.org/numberOfMinutes'),
+                  literal(minutesItTook)
+              );
+
+              writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://www.w3.org/ns/sosa/hasSimpleResult'),
+                  literal(amountOfTravelFlowsPerMinute[origin][destination][minutesItTook])
+              );
+
+              // For the whole dataset
+             /* writer.addQuad(
+                  namedNode(observation),
+                  namedNode('http://www.w3.org/ns/sosa/phenomenonTime'),
+                  writer.blank([{
+                    predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                    object: namedNode('http://www.w3.org/2006/time#Interval')
+                  },{
+                    predicate: namedNode('http://www.w3.org/2006/time#hasBeginning'),
+                    object: writer.blank([{
+                      predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                      object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+                    },{
+                      predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+                      object: literal(formatDate(START))
+                    }])
+                  },{
+                    predicate: namedNode('http://www.w3.org/2006/time#hasEnd'),
+                    object: writer.blank([{
+                      predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                      object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+                    },{
+                      predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+                      object: literal(formatDate(END))
+                    }])
+                  }])
+              );*/
+            }
+          }
+        }
+      }
+
+      createUniqueAndTransitObservations();
     }
   });
 }
@@ -653,7 +747,7 @@ function calculateAverageTimeBetweenCameraPairs() {
           if (took < 60*60*1000) {
             if (!timeBetweenCameraPairs[numberPlatePreviously[plate].where]) timeBetweenCameraPairs[numberPlatePreviously[plate].where] = {};
             if (!timeBetweenCameraPairs[numberPlatePreviously[plate].where][cameraId]) timeBetweenCameraPairs[numberPlatePreviously[plate].where][cameraId] = [];
-            else timeBetweenCameraPairs[numberPlatePreviously[plate].where][cameraId].push(took);
+            timeBetweenCameraPairs[numberPlatePreviously[plate].where][cameraId].push(took);
           }
           // Overwrite previous detection
           numberPlatePreviously[plate].where = cameraId;
@@ -668,13 +762,195 @@ function calculateAverageTimeBetweenCameraPairs() {
           let sum = 0;
           let count = 0;
           for (let time in timeBetweenCameraPairs[origin][destination]) {
-            sum += time;
+            sum += Number(timeBetweenCameraPairs[origin][destination][time]);
+            count++;
           }
           if (!averageTimeBetweenCameraPairs[origin]) averageTimeBetweenCameraPairs[origin] = {};
-          averageTimeBetweenCameraPairs[origin][destination] = sum / count;
+          let avg = sum/count;
+          averageTimeBetweenCameraPairs[origin][destination] = avg;
         }
       }
       createTravelFlows();
     }
   });
+}
+
+function createUniqueAndTransitObservations() {
+  let numberPlatePreviously = {}; // number plate -> how long seen for that day - we also use this object for the number of unique vehicles
+  let datePreviouslyProcessed = null;
+
+  let s = fs.createReadStream(program.anpr);
+  // First we need to calculate the average time it takes between every camera pair, on working days 
+  papaparse.parse(s, {
+    download: true,
+    header: true,
+    step: function(row, parser) {
+      let plate = row.data['Plate'];
+      if (!plate) plate = row.data['﻿Plate']; // some special character thing here
+      const cameraId = row.data.DeviceId;
+      const timestamp = new Date(row.data.TimeStamp);
+
+      // When new day started, process the number plates
+      if (datePreviouslyProcessed && timestamp.getDate() != datePreviouslyProcessed.getDate()) {
+        processDayForUniqueAndTransitObservation(numberPlatePreviously, datePreviouslyProcessed);
+        numberPlatePreviously = {}; // reset
+      }
+      datePreviouslyProcessed = timestamp;
+      if (!numberPlatePreviously[plate]) {
+        numberPlatePreviously[plate] = {};
+        numberPlatePreviously[plate].duration = 0;
+        numberPlatePreviously[plate].when = timestamp;
+        numberPlatePreviously[plate].where = [cameraId];
+      } else {
+        // This number plate has already been noticed
+        // Time in ms it took to get to the next camera
+        let took = timestamp.getTime() - numberPlatePreviously[plate].when.getTime();
+        numberPlatePreviously[plate].duration += took;
+        // Overwrite previous detection
+        numberPlatePreviously[plate].when = timestamp;
+        numberPlatePreviously[plate].where.push(cameraId);
+      }     
+    },
+    complete: function() {
+      processDayForUniqueAndTransitObservation(numberPlatePreviously, datePreviouslyProcessed);
+
+      writer.end((error, result) => {
+        updateReportTemplate();
+      });
+    }
+  });
+}
+
+function unique(value, index, self) {
+  return self.indexOf(value) === index
+}
+
+function processDayForUniqueAndTransitObservation(numberPlatePreviously, date) {
+  let countTransit = 0;
+  for (let npi in numberPlatePreviously) {
+    let numberplate = numberPlatePreviously[npi];
+    // When the duration is below one hour
+    // and the vehicle is only detected once at every camera
+    if (numberPlatePreviously[npi].duration < 60*60*1000 && numberPlatePreviously[npi].where.filter(unique).length === numberPlatePreviously[npi].where.length) {
+      countTransit++;
+    }
+  }
+  let countUnique = Object.keys(numberPlatePreviously).length;
+
+  let observedPropertyTransit = 'http://example.org/passedByTransitVehiclesCount';
+  let propertyTransit = 'passedByTransitVehiclesCount';
+  let observedPropertyUnique = 'http://example.org/passedByUniqueVehiclesCount';
+  let propertyUnique = 'passedByUniqueVehiclesCount';
+  //// Round to hourly, e.g. 2020-06-10T03:00:00.000Z
+  date.setMinutes(0);
+  date.setSeconds(0);
+  date.setMilliseconds(0);
+  date.setHours(0);
+  let endDate = new Date(date.getTime() + 24*60*60*1000); 
+  let timestampFormatted = formatDate(new Date(date));
+  let observationTransit = 'http://example.org/observation/' + propertyTransit + '?timestamp=' + timestampFormatted;
+  let observationUnique = 'http://example.org/observation/' + propertyUnique + '?timestamp=' + timestampFormatted;
+  let aggrPeriod = "https://w3id.org/city_of_things#Daily";
+
+    writer.addQuad(
+        namedNode(observationTransit),
+        namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+        namedNode('http://www.w3.org/ns/sosa/Observation')
+    );
+
+    writer.addQuad(
+        namedNode(observationUnique),
+        namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+        namedNode('http://www.w3.org/ns/sosa/Observation')
+    );
+
+    writer.addQuad(
+        namedNode(observationTransit),
+        namedNode('https://w3id.org/city_of_things#aggregationPeriod'),
+        namedNode(aggrPeriod)
+    );
+
+    writer.addQuad(
+        namedNode(observationUnique),
+        namedNode('https://w3id.org/city_of_things#aggregationPeriod'),
+        namedNode(aggrPeriod)
+    );
+
+    writer.addQuad(
+        namedNode(observationTransit),
+        namedNode('http://www.w3.org/ns/sosa/phenomenonTime'),
+        writer.blank([{
+          predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+          object: namedNode('http://www.w3.org/2006/time#Interval')
+        },{
+          predicate: namedNode('http://www.w3.org/2006/time#hasBeginning'),
+          object: writer.blank([{
+            predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+          },{
+            predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+            object: literal(timestampFormatted)
+          }])
+        },{
+          predicate: namedNode('http://www.w3.org/2006/time#hasEnd'),
+          object: writer.blank([{
+            predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+          },{
+            predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+            object: literal(formatDate(endDate))
+          }])
+        }])
+    );
+
+    writer.addQuad(
+        namedNode(observationUnique),
+        namedNode('http://www.w3.org/ns/sosa/phenomenonTime'),
+        writer.blank([{
+          predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+          object: namedNode('http://www.w3.org/2006/time#Interval')
+        },{
+          predicate: namedNode('http://www.w3.org/2006/time#hasBeginning'),
+          object: writer.blank([{
+            predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+          },{
+            predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+            object: literal(timestampFormatted)
+          }])
+        },{
+          predicate: namedNode('http://www.w3.org/2006/time#hasEnd'),
+          object: writer.blank([{
+            predicate: namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            object: namedNode('http://www.w3.org/2006/time#TimeInstant'),
+          },{
+            predicate: namedNode('http://www.w3.org/2006/time#inXSDDateTimeStamp'),
+            object: literal(formatDate(endDate))
+          }])
+        }])
+    );
+
+    writer.addQuad(
+        namedNode(observationTransit),
+        namedNode('http://www.w3.org/ns/sosa/observedProperty'),
+        namedNode(observedPropertyTransit)
+    );
+
+    writer.addQuad(
+        namedNode(observationUnique),
+        namedNode('http://www.w3.org/ns/sosa/observedProperty'),
+        namedNode(observedPropertyUnique)
+    );
+
+    writer.addQuad(
+        namedNode(observationTransit),
+        namedNode('http://www.w3.org/ns/sosa/hasSimpleResult'),
+        literal(countTransit)
+    );
+
+    writer.addQuad(
+        namedNode(observationUnique),
+        namedNode('http://www.w3.org/ns/sosa/hasSimpleResult'),
+        literal(countUnique)
+    );
 }
