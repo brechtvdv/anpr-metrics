@@ -26,10 +26,12 @@ window.onload = function(){
 
 function prepareTravelflowsMap() {
 	travelflowsmap = L.map('travelFlowsMap').setView([50.838, 3.2623], 12);
-	
-	 L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', {
+
+	 L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWF4aW10bWFydGluIiwiYSI6ImNqcHdqbjdhaDAzYzc0Mm04eDFhamkzenMifQ.0uNbKJ2WHATkKBBSADuhyQ', {
 		maxZoom: 20,
-		attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
 	}).addTo(travelflowsmap)
 
 	flowsInfo.onAdd = function (map) {
@@ -77,9 +79,11 @@ function prepareTravelflowsMap() {
 
 function prepareCameraMap() {
 	cameramap = L.map('cameramap',{ maxZoom: 16 }).setView([50.838, 3.2623], 12);
-	L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', {
+	 L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWF4aW10bWFydGluIiwiYSI6ImNqcHdqbjdhaDAzYzc0Mm04eDFhamkzenMifQ.0uNbKJ2WHATkKBBSADuhyQ', {
 		maxZoom: 20,
-		attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
 	}).addTo(cameramap);
 
 	cameraInfo.onAdd = function (map) {
@@ -108,12 +112,12 @@ function storeData() {
 		latitudes = getLatitudeArrayFromObjects(geometries);
 		longitudes = getLongitudeArrayFromObjects(geometries);
 
-		obsWithPropertyPassedByVehiclesInFlow = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('http://example.org/passedByVehiclesInFlow')));
-		obsWithPropertyPassedByVehiclesCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('http://example.org/passedByVehiclesCount'))).sort(sortSubjectsByBeginning);
-		dailyObs = getSubjectsArray(store.getQuads(null, namedNode('https://w3id.org/city_of_things#aggregationPeriod'), namedNode('https://w3id.org/city_of_things#Daily')));
-		hourlyObs = getSubjectsArray(store.getQuads(null, namedNode('https://w3id.org/city_of_things#aggregationPeriod'), namedNode('https://w3id.org/city_of_things#Hourly')));
+		obsWithPropertyPassedByVehiclesInFlowCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByVehiclesInFlowCount')));
+		obsWithPropertyPassedByVehiclesCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByVehiclesCount'))).sort(sortSubjectsByBeginning);
+		dailyObs = getSubjectsArray(store.getQuads(null, namedNode('https://w3id.org/cityofthings#aggregationPeriod'), namedNode('https://w3id.org/cityofthings#Daily')));
+		hourlyObs = getSubjectsArray(store.getQuads(null, namedNode('https://w3id.org/cityofthings#aggregationPeriod'), namedNode('https://w3id.org/cityofthings#Hourly')));
 
-		obsWithPropertyPassedByVehiclesCountMedian = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('http://example.org/passedByVehiclesCountMedian')));
+		obsWithPropertyPassedByVehiclesCountMedian = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByVehiclesCountMedian')));
 
 		// Hide loader
 	  	document.getElementById("loader").style.display = "none";
@@ -122,6 +126,8 @@ function storeData() {
 
 		showDates();
 		showCameras();
+
+		loadOverzichtTransitEnUniekGraph();
   	}
   });
 }
@@ -235,7 +241,7 @@ function updateAmountAndHeatmapWithSliderValueContinuously() {
 		let value = new Date($( "#slider" ).slider( "value" ));
 		$( "#amount" ).val(formatDate(value)); // update input field
 		plotHeatmapPerHour(value);
-		setTimeout(updateAmountAndHeatmapWithSliderValueContinuously, 50);
+		setTimeout(updateAmountAndHeatmapWithSliderValueContinuously, 100);
 	}
 }
 
@@ -330,6 +336,7 @@ function cameraZoomToFeature(e) {
 
     loadOverzichtPerDagGraph(e.target.feature);
 	loadOverzichtPerUurGraph(e.target.feature);
+	loadTimeDistribution(e.target.feature);
 
 	$('html, body').animate({
 	    scrollTop: $("#overzichtPerDag").offset().top
@@ -342,6 +349,38 @@ function cameraOnEachFeature(feature, layer) {
         mouseout: cameraResetHighlight,
         click: cameraZoomToFeature
     });
+}
+
+function loadOverzichtTransitEnUniekGraph() {
+	// And that is aggregated per day
+	let obsWithPropertyPassedByTransitVehiclesCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByTransitVehiclesCount')));
+	let obsWithPropertyPassedByUniqueVehiclesCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByUniqueVehiclesCount')));
+	let layout = {
+		title: 'Overzicht voertuigen (berekend overheen alle camera\'s)',
+        xaxis: {
+            rangeselector: {},
+            rangeslider: {}
+        },
+        yaxis: {
+            fixedrange: true
+        }
+	}
+
+	let traceTransitPerDay = {
+	    x: getArrayOfBeginningsOfSubjects(obsWithPropertyPassedByTransitVehiclesCount),
+	    y: getObjectsArray(unpackSubjects(obsWithPropertyPassedByTransitVehiclesCount, 'http://www.w3.org/ns/sosa/hasSimpleResult')),
+	    type: 'lines',
+	    name: 'aantal voertuigen in transit'
+	};
+
+	let traceUniquePerDay = {
+	    x: getArrayOfBeginningsOfSubjects(obsWithPropertyPassedByUniqueVehiclesCount),
+	    y: getObjectsArray(unpackSubjects(obsWithPropertyPassedByUniqueVehiclesCount, 'http://www.w3.org/ns/sosa/hasSimpleResult')),
+	    type: 'lines',
+	    name: 'aantal unieke voertuigen'
+	};
+
+	Plotly.newPlot(document.getElementById('overzichtTransitEnUniek'), [traceTransitPerDay, traceUniquePerDay], layout);
 }
 
 function loadOverzichtPerDagGraph(feature) {
@@ -418,6 +457,65 @@ function loadOverzichtPerUurGraph(feature) {
 	Plotly.newPlot(document.getElementById('overzichtPerUur'), [tracePerHour, tracePerHourMedian], layout);
 }
 
+function loadTimeDistribution(feature) {
+	let cameraURI = feature.properties.id;
+
+	let obsWithPropertyPassedByVehiclesPerMinuteInFlowCount = getSubjectsArray(store.getQuads(null, namedNode('http://www.w3.org/ns/sosa/observedProperty'), namedNode('https://w3id.org/cityofthings#passedByVehiclesPerMinuteInFlowCount'))); //.sort(sortSubjectsByBeginning);
+	let obsWithOriginCamera = getSubjectsArray(store.getQuads(null, namedNode('https://w3id.org/cityofthings#originCamera'), namedNode(cameraURI)));
+	let obsForDistribution = intersection(obsWithPropertyPassedByVehiclesPerMinuteInFlowCount, obsWithOriginCamera);
+
+	// Get unique destinationCameras
+	let destinationCameras = getObjectsArray(unpackSubjects(obsForDistribution, 'https://w3id.org/cityofthings#destinationCamera')).filter((x, i, a) => a.indexOf(x) === i);
+
+	let traces = [];
+	for (let dc in destinationCameras) {
+		// Don't show to itself
+		if (cameraURI != destinationCameras[dc]) {
+			// One trace per destinationCamera
+			let obsWithDestinationCamera = obsForDistribution.filter(observationHasDestinationCamera(destinationCameras[dc]))
+			let text = [];
+			for (let o in obsWithDestinationCamera) {
+				let t = store.getQuads(namedNode(obsWithDestinationCamera[o]), namedNode('http://www.w3.org/ns/sosa/hasSimpleResult'), null)[0].object.value 
+				+ ' voertuigen deden er '
+				+ store.getQuads(namedNode(obsWithDestinationCamera[o]), namedNode('https://w3id.org/cityofthings#numberOfMinutes'), null)[0].object.value
+				+ ' minuten over om van '
+				+ getLabelFromSubject(cameraURI)
+				+ ' naar '
+				+ getLabelFromSubject(destinationCameras[dc])
+				+ ' te geraken';
+				text.push(t);
+			}
+			let trace = {
+			  x: getObjectsArray(unpackSubjects(obsWithDestinationCamera, 'https://w3id.org/cityofthings#numberOfMinutes')), // array of minute buckets
+			  y: getObjectsArray(unpackSubjects(obsWithDestinationCamera, 'http://www.w3.org/ns/sosa/hasSimpleResult')),
+			  name: getLabelFromSubject(destinationCameras[dc]),
+			  type: 'bar',
+			  text: text,
+			  visible: (Number(dc) === 0) ? true : 'legendonly' // only show the first trace
+			}
+			traces.push(trace);
+		}
+	}
+
+	var layout = {	title: 'Tijdsverdeling naar andere camera\'s',
+					barmode: 'group',
+				xaxis: {
+			    title: {
+			      text: 'Aantal minuten'
+			    },
+			  },
+			  yaxis: {
+			    title: {
+			      text: 'Aantal voertuigen'
+			    }
+			  }};
+
+	Plotly.newPlot('tijdsdistributie', traces, layout);
+}
+
+function getLabelFromSubject(subject) {
+	return store.getQuads(namedNode(subject), "http://www.w3.org/2000/01/rdf-schema#label", null)[0].object.value;
+}
 // TRAVEL FLOWS
 function getColor(d) {
     return d > 160 ? '#800026' :
@@ -447,6 +545,13 @@ function observationHappensInInterval(interval) {
 		let beginning = new Date(getBeginningFromSubject(observation));
 		let end = new Date(getEndFromSubject(observation)); 
 		return beginning.getTime() >= interval.start && end.getTime() <= interval.end;
+	}
+}
+
+function observationHasDestinationCamera(destinationCamera) {
+	return function(observation) {
+		let d = store.getQuads(namedNode(observation), namedNode('https://w3id.org/cityofthings#destinationCamera'), null)[0].object.value;
+		return d === destinationCamera;
 	}
 }
 
@@ -485,15 +590,15 @@ function flowsOnEachFeature(feature, layer) {
 }
 
 function plotHeatmapPerHour(startDatetime) {
-  	if (travelflows) travelflows.remove();
+	if (travelflows) travelflows.remove();
 	let featurecollection = {"type":"FeatureCollection","features": []};
 	let interval = {"start": startDatetime, "end": new Date(startDatetime.getTime()+1000*60*60)};
-	let obsWithPropertyPassedByVehiclesInFlowInInterval = obsWithPropertyPassedByVehiclesInFlow.filter(observationHappensInInterval(interval));
+	let obsWithPropertyPassedByVehiclesInFlowInInterval = obsWithPropertyPassedByVehiclesInFlowCount.filter(observationHappensInInterval(interval));
 	for (let obs in obsWithPropertyPassedByVehiclesInFlowInInterval) {
 		// Get origin and destination camera from observation
 		let flows = store.getQuads(namedNode(obsWithPropertyPassedByVehiclesInFlowInInterval[obs]), namedNode('http://www.w3.org/ns/sosa/hasSimpleResult'), null)[0].object.value; 
-		let origin = store.getQuads(namedNode(obsWithPropertyPassedByVehiclesInFlowInInterval[obs]), namedNode('http://example.org/originCamera'), null)[0].object.value;
-		let destination = store.getQuads(namedNode(obsWithPropertyPassedByVehiclesInFlowInInterval[obs]), namedNode('http://example.org/destinationCamera'), null)[0].object.value;
+		let origin = store.getQuads(namedNode(obsWithPropertyPassedByVehiclesInFlowInInterval[obs]), namedNode('https://w3id.org/cityofthings#originCamera'), null)[0].object.value;
+		let destination = store.getQuads(namedNode(obsWithPropertyPassedByVehiclesInFlowInInterval[obs]), namedNode('https://w3id.org/cityofthings#destinationCamera'), null)[0].object.value;
 		let originIndex = getSubjectsArray(cameras).indexOf(origin);
 		let destinationIndex = getSubjectsArray(cameras).indexOf(destination);
 		let originLabel = store.getQuads(namedNode(origin), "http://www.w3.org/2000/01/rdf-schema#label", null)[0].object.value;

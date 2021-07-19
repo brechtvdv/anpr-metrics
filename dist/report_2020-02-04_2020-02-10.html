@@ -1,0 +1,394 @@
+<!doctype html>
+<html>
+<head>
+    <title>ANPR dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+          integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="./main.css"/>
+</head>
+<body>
+<h1 id="titel">Rapport ANPR</h1>
+
+<div id="load">
+    <div id="loader"></div>
+    <div id="loader-text">Data aan het laden:<br> Dit kan enkele seconden duren...</div>
+</div>
+<div id="cameramap"></div>
+
+<h1 id="cameraLabel"></h1>
+
+<div id="overzichtPerDag"></div>
+
+<div id="overzichtPerUur"></div>
+
+<div id="tijdsdistributie"></div>
+
+<div id="overzichtTransitEnUniek"></div>
+
+<div id="timeslider">
+    <div id="playButton">
+        <span class="round-button"><i class="fa fa-play fa-2x"></i></span>
+    </div>
+    <div id="slider"></div>
+</div>
+<div id="sliderresult">
+    <input type="text" id="amount" readonly>
+</div>
+
+<div id="travelFlowsMap"></div>
+<script>
+    window.data = `@prefix onderdeel: <https://wegenenverkeer.data.vlaanderen.be/ns/onderdeel#>.
+
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#>.
+
+@prefix cot: <https://w3id.org/cityofthings#>.
+
+@prefix sosa: <http://www.w3.org/ns/sosa/>.
+
+@prefix locn: <http://www.w3.org/ns/locn#>.
+
+@prefix geosparql: <http://www.opengis.net/ont/geosparql#>.
+
+@prefix time: <http://www.w3.org/2006/time#>.
+
+<http://example.org/cameras/131> a onderdeel:ANPRCamera;
+    <http://www.w3.org/2000/01/rdf-schema#label> "Kortrijk Pottelberg";
+    locn:geometry <http://example.org/cameras/131/geometry>.
+<http://example.org/cameras/131/geometry> a locn:Geometry;
+    geosparql:asWKT "POINT (3.251711 50.81323)".
+<http://example.org/cameras/130> a onderdeel:ANPRCamera;
+    <http://www.w3.org/2000/01/rdf-schema#label> "Heule Oude Ieperseweg";
+    locn:geometry <http://example.org/cameras/130/geometry>.
+<http://example.org/cameras/130/geometry> a locn:Geometry;
+    geosparql:asWKT "POINT (3.223367 50.83575)".
+<http://example.org/observation/130/perHour/2020-02-04T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/131/perHour/2020-02-04T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/131>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/perDay/2020-02-04T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/131/perDay/2020-02-04T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/131>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/perHour/2020-02-05T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "1"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/perDay/2020-02-05T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-06T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCount;
+    sosa:hasSimpleResult "1"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/passedByVehiclesCountMedian/hourly/2020-02-04T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "8.5"^^<http://www.w3.org/2001/XMLSchema#double>.
+<http://example.org/observation/131/passedByVehiclesCountMedian/hourly/2020-02-04T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/131>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/passedByVehiclesCountMedian/hourly/2020-02-05T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "8.5"^^<http://www.w3.org/2001/XMLSchema#double>.
+<http://example.org/observation/131/passedByVehiclesCountMedian/hourly/2020-02-05T12:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Hourly;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T12:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T13:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/131>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/passedByVehiclesCountMedian/daily/2020-02-04T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/131/passedByVehiclesCountMedian/daily/2020-02-04T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/131>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/130/passedByVehiclesCountMedian/daily/2020-02-05T00:00:00.000Z> a sosa:Observation;
+    cot:aggregationPeriod cot:Daily;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-06T00:00:00.000Z"
+]
+];
+    sosa:hasFeatureOfInterest <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesCountMedian;
+    sosa:hasSimpleResult "1"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/passedByVehiclesInFlowCount/131/130?timestamp=2020-02-04T13:00:00.000Z> a sosa:Observation;
+    sosa:hasFeatureOfInterest [
+  a cot:Flow;
+  cot:contains [
+  a <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <131>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> [
+  a <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <130>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>
+]
+]
+], <http://example.org/cameras/131>, <http://example.org/cameras/130>;
+    cot:originCamera <http://example.org/cameras/131>;
+    cot:destinationCamera <http://example.org/cameras/130>;
+    sosa:observedProperty cot:passedByVehiclesInFlowCount;
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>;
+    sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T13:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T14:00:00.000Z"
+]
+].
+<http://example.org/observation/passedByVehiclesPerMinuteInFlowCount/131/130/5> a sosa:Observation;
+    sosa:hasFeatureOfInterest [
+  a cot:Flow;
+  cot:contains [
+  a <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <131>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> [
+  a <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <130>;
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>
+]
+]
+], <http://example.org/cameras/131>, <http://example.org/cameras/130>;
+    cot:originCamera <http://example.org/cameras/131>;
+    cot:destinationCamera <http://example.org/cameras/130>;
+    sosa:observedProperty [
+  a cot:AggregatedFlowCount;
+  cot:numberOfSeconds "300"^^<http://www.w3.org/2001/XMLSchema#integer>;
+  cot:meansOfTransport <https://example.org/vehicle>
+], cot:passedByVehiclesPerMinuteInFlowCount;
+    cot:numberOfMinutes "5";
+    sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> a sosa:Observation.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> a sosa:Observation.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> cot:aggregationPeriod cot:Daily.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> cot:aggregationPeriod cot:Daily.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+].
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-04T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+]
+].
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:observedProperty cot:passedByTransitVehiclesCount.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:observedProperty cot:passedByUniqueVehiclesCount.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-04T00:00:00.000Z> sosa:hasSimpleResult "16"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> a sosa:Observation.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> a sosa:Observation.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> cot:aggregationPeriod cot:Daily.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> cot:aggregationPeriod cot:Daily.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-06T00:00:00.000Z"
+]
+].
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:phenomenonTime [
+  a time:Interval;
+  time:hasBeginning [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-05T00:00:00.000Z"
+];
+  time:hasEnd [
+  a time:TimeInstant;
+  time:inXSDDateTimeStamp "2020-02-06T00:00:00.000Z"
+]
+].
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:observedProperty cot:passedByTransitVehiclesCount.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:observedProperty cot:passedByUniqueVehiclesCount.
+<http://example.org/observation/passedByTransitVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:hasSimpleResult "1"^^<http://www.w3.org/2001/XMLSchema#integer>.
+<http://example.org/observation/passedByUniqueVehiclesCount?timestamp=2020-02-05T00:00:00.000Z> sosa:hasSimpleResult "1"^^<http://www.w3.org/2001/XMLSchema#integer>.
+`;
+</script>
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+<script src="main.js"></script>
+</body>
+</html>

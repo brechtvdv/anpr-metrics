@@ -46,7 +46,7 @@
     margin:auto;
 }
 
-#overzichtPerDag, #overzichtPerUur {
+#overzichtPerDag, #overzichtPerUur, #tijdsdistributie, #overzichtTransitEnUniek {
 	width:75%;
 	height:auto;
 	margin: auto;

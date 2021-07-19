@@ -1,48 +1,52 @@
-  <!doctype html>
-  <html>
-   <head>
-     <title>ANPR dashboard</title>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
-   integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
-   crossorigin=""/>
-      <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
-     <link rel="stylesheet" href="./main.css"/>
-   </head>
-   <body>
-     <h1 id="titel">Rapport ANPR</h1>
+<!doctype html>
+<html>
+<head>
+    <title>ANPR dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+          integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="./main.css"/>
+</head>
+<body>
+<h1 id="titel">Rapport ANPR</h1>
 
-     <div id="load">
-       <div id="loader"></div>
-       <div id="loader-text">Data aan het laden:<br> Dit kan enkele seconden duren...</div>
-     </div>
-     <div id="cameramap"></div>
+<div id="load">
+    <div id="loader"></div>
+    <div id="loader-text">Data aan het laden:<br> Dit kan enkele seconden duren...</div>
+</div>
+<div id="cameramap"></div>
 
-     <h1 id="cameraLabel"></h1>
+<h1 id="cameraLabel"></h1>
 
-     <div id="overzichtPerDag"></div>
+<div id="overzichtPerDag"></div>
 
-     <div id="overzichtPerUur"></div>
+<div id="overzichtPerUur"></div>
 
-      <div id="timeslider">
-       <div id="playButton">
-      <span class="round-button"><i class="fa fa-play fa-2x"></i></span>
-      </div>
+<div id="tijdsdistributie"></div>
+
+<div id="overzichtTransitEnUniek"></div>
+
+<div id="timeslider">
+    <div id="playButton">
+        <span class="round-button"><i class="fa fa-play fa-2x"></i></span>
+    </div>
     <div id="slider"></div>
 </div>
-<div id="sliderresult"> 
-<input type="text" id="amount" readonly>
-  </div>
-  
-        <div id="travelFlowsMap"></div>
-   <script>
-       window.data = $data$;
-   </script>
-  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-   <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
-   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
-   crossorigin=""></script>
-   <script src="main.js"></script>   
-   </body>
-  </html>
+<div id="sliderresult">
+    <input type="text" id="amount" readonly>
+</div>
+
+<div id="travelFlowsMap"></div>
+<script>
+    window.data = $data$;
+</script>
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+<script src="main.js"></script>
+</body>
+</html>

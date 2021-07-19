@@ -4,11 +4,30 @@ ANPR Metrics is an open source Command Line Interface (CLI) and dashboard for in
 
 # Metrics
 
-**https://w3id.org/cot#passedByVehiclesCount:** Total number of vehicles that is detected by a camera during a certain time interval. This can be an hourly, daily, weekly... total count.
+**https://w3id.org/cityofthings#passedByVehiclesCount:** Total number of vehicles that is detected by a camera during a certain time interval. This can be an hourly, daily, weekly... total count.
 
-**https://w3id.org/cot#passedByVehiclesCountInFlow:** Total number of vehicles that went from one camera to another, sometimes referred to as origin/destination data.
+**https://w3id.org/cityofthings#passedByVehiclesInFlowCount:** Total number of vehicles that went from one camera to another, sometimes referred to as origin/destination data.
+
+**https://w3id.org/cityofthings#AggregatedFlowCount:** Total number of vehicles that went from the origin to the destination camera in a certain number of minutes.
+
+**https://w3id.org/cityofthings#passedByTransitVehiclesCount:** The number of vehicles that transitted the city. A vehicle is in transit when it is detected less than an hour in one day and is only detected once per camera.
+
+**https://w3id.org/cityofthings#passedByUniqueVehiclesCount:** The number of distinct number plates that are detected.
+
 
 ## CLI
+
+### Requirements
+
+* OSX, Linux or Windows Subsystem for Linux (WSL) for Windows users
+* Node.js
+
+### Run
+
+Install the dependencies:
+```
+npm install
+```
 
 The CLI is responsible for loading the raw ANPR data, running aggregation and reports, then deleting the raw cache.
 The CLI expects ANPR data in CSV format that looks like below:
@@ -61,4 +80,22 @@ The following flags are required to run anpr-metrics.
 
 ## Report
 
+The dashboard can be viewed by opening "report.html" inside the dist folder.
+Example output for Kortrijk:
+
 ![HTML report](https://gitlab.ilabt.imec.be/brvdvyve/anpr_metrics/-/raw/master/resources/gif.gif "Overview of the report.")
+
+# Demo with example data
+
+An example ANPR dataset `example.csv` is given in folder `resources`.
+
+```
+npm install
+head -1 resources/example.csv > anpr_sorted.csv && tail -n +2 resources/example.csv | sort -t, -k 4 >> anpr_sorted.csv
+node index.js --anpr anpr_sorted.csv  -s 2020-02-04 -e 2020-02-10
+```
+
+The dashboard is generated in folder `dist`, called `report_2020-02-04_2020-02-10.html`.
+
+
+
