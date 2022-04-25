@@ -83,7 +83,7 @@ The following flags are required to run anpr-metrics.
 The dashboard can be viewed by opening "report.html" inside the dist folder.
 Example output for Kortrijk:
 
-![HTML report](https://gitlab.ilabt.imec.be/brvdvyve/anpr_metrics/-/raw/master/resources/gif.gif "Overview of the report.")
+![HTML report](https://github.com/brechtvdv/anpr_metrics/raw/master/resources/gif.gif "Overview of the report.")
 
 # Demo with example data
 
